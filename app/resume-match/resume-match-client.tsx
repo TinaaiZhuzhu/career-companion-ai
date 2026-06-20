@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { CoverLetterCard } from "@/app/components/cover-letter-card";
+import { DocxUpload } from "@/app/components/docx-upload";
+import { MatchAnalysisCard } from "@/app/components/match-analysis-card";
 import { SiteHeader } from "@/app/components/site-header";
 
 type AnalyseResponse = {
@@ -25,12 +28,6 @@ function LoadingIndicator() {
   );
 }
 
-function ResultPlaceholder({ message }: { message: string }) {
-  return (
-    <p className="text-sm leading-6 text-slate-500">{message}</p>
-  );
-}
-
 function ErrorBanner({ message }: { message: string }) {
   return (
     <div
@@ -51,13 +48,23 @@ export function ResumeMatchClient() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
 
-  const hasResults = Boolean(matchAnalysis && coverLetter);
+  function handleResumeExtracted(text: string) {
+    setResumeText(text);
+    setValidationError(null);
+  }
+
+  function handleResumeReplace() {
+    setResumeText("");
+  }
 
   async function handleAnalyse() {
-    if (!resumeText.trim() || !jobDescription.trim()) {
-      setValidationError(
-        "Please enter both your resume and the job description before analysing.",
-      );
+    if (!resumeText.trim()) {
+      setValidationError("Please upload your resume before generating.");
+      return;
+    }
+
+    if (!jobDescription.trim()) {
+      setValidationError("Please enter a job description before generating.");
       return;
     }
 
@@ -130,30 +137,25 @@ export function ResumeMatchClient() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-2">
+        <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div>
-              <label
-                htmlFor="resume-text"
-                className="block text-sm font-semibold text-slate-900"
-              >
-                Resume Text
+              <label className="block text-sm font-semibold text-slate-900">
+                Resume
               </label>
               <p className="mt-1 text-sm text-slate-500">
-                Paste the full text of your resume.
+                Upload your resume as a Word document (.docx).
               </p>
-              <textarea
-                id="resume-text"
-                name="resume-text"
-                className={`${textareaClass} mt-3`}
-                placeholder="e.g. Professional summary, work history, skills, education…"
-                value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                disabled={isLoading}
-              />
+              <div className="mt-4">
+                <DocxUpload
+                  onExtracted={handleResumeExtracted}
+                  onReplace={handleResumeReplace}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
-            <div>
+            <div className="mt-8">
               <label
                 htmlFor="job-description"
                 className="block text-sm font-semibold text-slate-900"
@@ -173,22 +175,22 @@ export function ResumeMatchClient() {
                 disabled={isLoading}
               />
             </div>
-          </div>
 
-          <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={handleAnalyse}
-              disabled={isLoading}
-              className="rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-            >
-              {isLoading ? "Analysing…" : "Analyse & Generate"}
-            </button>
-            {validationError && (
-              <p className="text-sm text-red-600" role="alert">
-                {validationError}
-              </p>
-            )}
+            <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={handleAnalyse}
+                disabled={isLoading}
+                className="w-full rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:w-auto"
+              >
+                {isLoading ? "Generating…" : "Generate"}
+              </button>
+              {validationError && (
+                <p className="text-sm text-red-600" role="alert">
+                  {validationError}
+                </p>
+              )}
+            </div>
           </div>
 
           {requestError && <ErrorBanner message={requestError} />}
@@ -200,49 +202,12 @@ export function ResumeMatchClient() {
           )}
 
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
-            <section
-              aria-labelledby="match-analysis-heading"
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-            >
-              <h2
-                id="match-analysis-heading"
-                className="text-lg font-semibold text-slate-900"
-              >
-                Match Analysis
-              </h2>
+            <MatchAnalysisCard
+              matchAnalysis={matchAnalysis}
+              isLoading={isLoading}
+            />
 
-              {hasResults && !isLoading && matchAnalysis ? (
-                <div className="mt-6 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                  {matchAnalysis}
-                </div>
-              ) : (
-                <div className="mt-4">
-                  <ResultPlaceholder message="Your match analysis will appear here after you run Analyse & Generate." />
-                </div>
-              )}
-            </section>
-
-            <section
-              aria-labelledby="cover-letter-heading"
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-            >
-              <h2
-                id="cover-letter-heading"
-                className="text-lg font-semibold text-slate-900"
-              >
-                Cover Letter
-              </h2>
-
-              {hasResults && !isLoading && coverLetter ? (
-                <div className="mt-6 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                  {coverLetter}
-                </div>
-              ) : (
-                <div className="mt-4">
-                  <ResultPlaceholder message="Your tailored cover letter will appear here after you run Analyse & Generate." />
-                </div>
-              )}
-            </section>
+            <CoverLetterCard coverLetter={coverLetter} isLoading={isLoading} />
           </div>
         </section>
       </main>
