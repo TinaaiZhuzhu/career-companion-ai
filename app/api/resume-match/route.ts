@@ -10,6 +10,7 @@ type WebhookSuccessResponse = {
   status: string;
   match_analysis?: string;
   cover_letter?: string;
+  optimised_resume?: string;
 };
 
 export async function POST(request: Request) {
@@ -85,7 +86,11 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!data.match_analysis?.trim() || !data.cover_letter?.trim()) {
+  if (
+    !data.match_analysis?.trim() ||
+    !data.cover_letter?.trim() ||
+    !data.optimised_resume?.trim()
+  ) {
     return Response.json(
       { error: "The analysis service returned incomplete results." },
       { status: 502 },
@@ -96,5 +101,6 @@ export async function POST(request: Request) {
     status: "success",
     match_analysis: data.match_analysis,
     cover_letter: data.cover_letter,
+    optimised_resume: data.optimised_resume,
   });
 }
